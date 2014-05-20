@@ -14,12 +14,19 @@
 (defrecord Stratum [id value])
 
 (defprotocol IStrata
-  (add-stratum [this id m] [this s]))
+  (log-get [this k] [this k not-found]))
 
 (deftype Strata [strata-l strata-v]
   IStrata
-  (add-stratum [this id m] (. this add-stratum (Stratum. id m)))
-  (add-stratum [this s] (Strata. (conj strata-l s) (conj strata-v s)))
+  (log-get [this k] (. this log-get k nil))
+  (log-get [this k not-found]
+    (if-let [s (some #(if (contains? (:value %) k) %) strata-l)]
+      (do
+        (println (str "Found key `" k "` in: " (pr-str (:id s))))
+        (k (:value s)))
+      (do
+        (println (str "Did not find key `" k "`, using not-found value of: " not-found))
+        not-found)))
 
   Associative
   (containsKey [this k]
@@ -69,7 +76,7 @@
 
   (cons [this o]
     (let [s (Stratum. (str (java.util.UUID/randomUUID)) (conj {} o))]
-      (. this add-stratum s)))
+      (Strata. (conj strata-l s) (conj strata-v s))))
 
   IPersistentMap
   (assoc [this k v]

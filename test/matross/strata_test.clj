@@ -3,9 +3,7 @@
             [matross.strata :refer :all]))
 
 (defn test-strata [& ms]
-  (reduce (fn [r m] (add-stratum r
-                     (str (java.util.UUID/randomUUID))
-                     m)) (strata) ms))
+  (apply conj (strata) ms))
 
 (deftest strata-behaves-like-a-map
   (let [s (test-strata {:k :not-v} {:k :v :foo :bar} {:baz :bat})]
