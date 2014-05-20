@@ -18,6 +18,14 @@
 
 (defrecord Stratum [id value])
 
+(defn some-strata-contains? [s k]
+  (some #(if (contains? (:value %) k) %) s))
+
+(defn flatten-strata [s]
+  (->> s
+       (map :value)
+       (apply merge)))
+
 (defprotocol IStrata
   (add-stratum [this id m] [this s]))
 
@@ -31,13 +39,13 @@
     (some #(contains? (:value %) k) strata-l))
 
   (entryAt [this k]
-    (if-let [s (some #(if (contains? (:value %) k) %) strata-l)]
+    (if-let [s (some-strata-contains? strata-l k)]
       (MapEntry. k (k (:value s)))))
 
   ILookup
   (valAt [this k] (.valAt this k nil))
   (valAt [this k not-found]
-    (if-let [s (some #(if (contains? (:value %) k) %) strata-l)]
+    (if-let [s (some-strata-contains? strata-l k)]
       (do
         (if @debug
           (println (str "Found key `" k "` in: " (pr-str (:id s)))))
@@ -51,8 +59,7 @@
   (invoke [this k] (. this valAt k))
   (invoke [this k not-found] (. this valAt k not-found))
   (toString [this] (->> strata-v
-                        (map :value)
-                        (apply merge)
+                        flatten-strata
                         str))
 
   Map
@@ -68,15 +75,12 @@
 
   IPersistentCollection
   (count [this] (->> strata-l
-                     (map :value)
-                     (apply merge)
+                     flatten-strata
                      count))
 
   (empty [this] (Strata. '() []))
   (equiv [this o]
-    (= (->> strata-l
-            (map :value)
-            (apply merge)) o))
+    (= (flatten-strata strata-l) o))
 
   (cons [this o]
     (let [s (Stratum. (str (java.util.UUID/randomUUID)) (conj {} o))]
