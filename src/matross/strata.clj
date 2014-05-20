@@ -18,7 +18,14 @@
 
 (defrecord Stratum [id value])
 
+(defprotocol IStrata
+  (add-stratum [this id m] [this s]))
+
 (deftype Strata [strata-l strata-v]
+  IStrata
+  (add-stratum [this id m] (. this add-stratum (Stratum. id m)))
+  (add-stratum [this s] (Strata. (conj strata-l s) (conj strata-v s)))
+
   Associative
   (containsKey [this k]
     (some #(contains? (:value %) k) strata-l))
@@ -43,7 +50,7 @@
   IFn
   (invoke [this k] (. this valAt k))
   (invoke [this k not-found] (. this valAt k not-found))
-  #_(toString [this] (->> strata-v
+  (toString [this] (->> strata-v
                         (map :value)
                         (apply merge)
                         str))
@@ -73,7 +80,7 @@
 
   (cons [this o]
     (let [s (Stratum. (str (java.util.UUID/randomUUID)) (conj {} o))]
-      (Strata. (conj strata-l s) (conj strata-v s))))
+      (. this add-stratum s)))
 
   IPersistentMap
   (assoc [this k v]
