@@ -11,23 +11,14 @@
            clojure.lang.SeqIterator
            java.util.Map))
 
+(def debug (atom false))
+
+(defn enable-debug [] (reset! debug true))
+(defn disable-debug [] (reset! debug false))
+
 (defrecord Stratum [id value])
 
-(defprotocol IStrata
-  (log-get [this k] [this k not-found]))
-
 (deftype Strata [strata-l strata-v]
-  IStrata
-  (log-get [this k] (. this log-get k nil))
-  (log-get [this k not-found]
-    (if-let [s (some #(if (contains? (:value %) k) %) strata-l)]
-      (do
-        (println (str "Found key `" k "` in: " (pr-str (:id s))))
-        (k (:value s)))
-      (do
-        (println (str "Did not find key `" k "`, using not-found value of: " not-found))
-        not-found)))
-
   Associative
   (containsKey [this k]
     (some #(contains? (:value %) k) strata-l))
@@ -40,8 +31,14 @@
   (valAt [this k] (.valAt this k nil))
   (valAt [this k not-found]
     (if-let [s (some #(if (contains? (:value %) k) %) strata-l)]
-      (k (:value s))
-      not-found))
+      (do
+        (if @debug
+          (println (str "Found key `" k "` in: " (pr-str (:id s)))))
+        (k (:value s)))
+      (do
+        (if @debug
+          (println (str "Did not find key `" k "`, using not-found value of: " not-found)))
+        not-found)))
 
   IFn
   (invoke [this k] (. this valAt k))
