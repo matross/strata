@@ -16,40 +16,38 @@
 (defn enable-debug [] (reset! debug true))
 (defn disable-debug [] (reset! debug false))
 
-(defrecord Stratum [id value])
+(defn stratum
+  "Append some identifying information to a value so that
+it can be easily referenced for debugging"
+  [id m]
+  (vary-meta m assoc :stratum-id id))
 
-(defn some-strata-contains? [s k]
-  (some #(if (contains? (:value %) k) %) s))
+(defn stratum-id [m]
+  (:stratum-id (meta m)))
+
+(defn some-stratum-contains? [s k]
+  (some #(if (contains? % k) %) s))
 
 (defn flatten-strata [s]
-  (->> s
-       (map :value)
-       (apply merge)))
-
-(defprotocol IStrata
-  (add-stratum [this id m] [this s]))
+  (apply merge s))
 
 (deftype Strata [strata-l strata-v]
-  IStrata
-  (add-stratum [this id m] (. this add-stratum (Stratum. id m)))
-  (add-stratum [this s] (Strata. (conj strata-l s) (conj strata-v s)))
-
   Associative
   (containsKey [this k]
-    (some #(contains? (:value %) k) strata-l))
+    (some-stratum-contains? strata-l k))
 
   (entryAt [this k]
-    (if-let [s (some-strata-contains? strata-l k)]
-      (MapEntry. k (k (:value s)))))
+    (if-let [m (some-stratum-contains? strata-l k)]
+      (MapEntry. k (get m k))))
 
   ILookup
   (valAt [this k] (.valAt this k nil))
   (valAt [this k not-found]
-    (if-let [s (some-strata-contains? strata-l k)]
+    (if-let [m (some-stratum-contains? strata-l k)]
       (do
         (if @debug
-          (println (str "Found key `" k "` in: " (pr-str (:id s)))))
-        (k (:value s)))
+          (println (str "Found key `" k "` in: " (pr-str (stratum-id m)))))
+        (get m k))
       (do
         (if @debug
           (println (str "Did not find key `" k "`, using not-found value of: " not-found)))
@@ -65,7 +63,6 @@
   Map
   (keySet [this]
     (->> strata-l
-         (map :value)
          (mapcat keys)
          set))
 
@@ -83,8 +80,9 @@
     (= (flatten-strata strata-l) o))
 
   (cons [this o]
-    (let [s (Stratum. (str (java.util.UUID/randomUUID)) (conj {} o))]
-      (. this add-stratum s)))
+    (let [sid (or (stratum-id o) (str (java.util.UUID/randomUUID)))
+          s (stratum sid  (conj {} o))]
+      (Strata. (conj strata-l s) (conj strata-v s))))
 
   IPersistentMap
   (assoc [this k v]
@@ -96,8 +94,7 @@
       (. this assoc k v)))
 
   (without [this k]
-    (let [new-strata-l
-          (map #(Stratum. (:id %) (dissoc (:value %) k)) strata-l)]
+    (let [new-strata-l (map #(dissoc % k) strata-l)]
       (Strata. new-strata-l (vector (reverse new-strata-l)))))
 
   Iterable
