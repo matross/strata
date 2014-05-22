@@ -1,4 +1,5 @@
 (ns matross.strata
+  (:require [clojure.pprint])
   (:import clojure.lang.Associative
            clojure.lang.IFn
            clojure.lang.ILookup
@@ -34,7 +35,9 @@ it can be easily referenced for debugging"
 (deftype Strata [strata map-fn]
   Associative
   (containsKey [this k]
-    (some-stratum-contains? strata k))
+    (if (some-stratum-contains? strata k)
+      true
+      false))
 
   (entryAt [this k]
     (if-let [m (some-stratum-contains? strata k)]

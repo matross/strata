@@ -42,4 +42,8 @@
 
     (testing "I can call `vals` on strata"
       (is (= (vals lifo) '(:bar :v :bat)))
-      (is (= (vals fifo) '(:bar :not-v :bat))))))
+      (is (= (vals fifo) '(:bar :not-v :bat))))
+
+    (testing "I can check for keys"
+      (is (contains? lifo :foo))
+      (is (not (contains? fifo :derp))))))
