@@ -31,19 +31,19 @@ it can be easily referenced for debugging"
 (defn flatten-strata [s]
   (apply merge s))
 
-(deftype Strata [strata-l strata-v]
+(deftype Strata [strata map-fn]
   Associative
   (containsKey [this k]
-    (some-stratum-contains? strata-l k))
+    (some-stratum-contains? strata k))
 
   (entryAt [this k]
-    (if-let [m (some-stratum-contains? strata-l k)]
+    (if-let [m (some-stratum-contains? strata k)]
       (MapEntry. k (get m k))))
 
   ILookup
   (valAt [this k] (.valAt this k nil))
   (valAt [this k not-found]
-    (if-let [m (some-stratum-contains? strata-l k)]
+    (if-let [m (some-stratum-contains? strata k)]
       (do
         (if @debug
           (println (str "Found key `" k "` in: " (pr-str (stratum-id m)))))
@@ -56,33 +56,32 @@ it can be easily referenced for debugging"
   IFn
   (invoke [this k] (. this valAt k))
   (invoke [this k not-found] (. this valAt k not-found))
-  (toString [this] (->> strata-v
-                        flatten-strata
-                        str))
+  (toString [this] (into {} (. this seq)))
 
   Map
   (keySet [this]
-    (->> strata-l
+    (->> strata
          (mapcat keys)
          set))
 
   Seqable
   (seq [this]
+    ; vectors aren't ISeq so we must use `map`, ignoring fifo/lifo behavior
     (map (fn [k] (. this entryAt k)) (. this keySet)))
 
   IPersistentCollection
-  (count [this] (->> strata-l
+  (count [this] (->> strata
                      flatten-strata
                      count))
 
-  (empty [this] (Strata. '() []))
+  (empty [this] (Strata. (empty strata) map-fn))
   (equiv [this o]
-    (= (flatten-strata strata-l) o))
+    (= (flatten-strata strata) o))
 
   (cons [this o]
     (let [sid (or (stratum-id o) (str (java.util.UUID/randomUUID)))
           s (stratum sid  (conj {} o))]
-      (Strata. (conj strata-l s) (conj strata-v s))))
+      (Strata. (conj strata s) map-fn)))
 
   IPersistentMap
   (assoc [this k v]
@@ -94,11 +93,14 @@ it can be easily referenced for debugging"
       (. this assoc k v)))
 
   (without [this k]
-    (let [new-strata-l (map #(dissoc % k) strata-l)]
-      (Strata. new-strata-l (vector (reverse new-strata-l)))))
+    (let [new-strata (map-fn #(dissoc % k) strata)]
+      (Strata. new-strata map-fn)))
 
   Iterable
   (iterator [this] (SeqIterator. (. this seq))))
 
-(defn strata
-  ([] (Strata. '() [])))
+(defn strata-fifo
+  ([] (Strata. [] mapv)))
+
+(defn strata-lifo
+  ([] (Strata. '() map)))
