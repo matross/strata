@@ -12,11 +12,6 @@
            clojure.lang.SeqIterator
            java.util.Map))
 
-(def debug (atom false))
-
-(defn enable-debug [] (reset! debug true))
-(defn disable-debug [] (reset! debug false))
-
 (defn stratum
   "Append some identifying information to a value so that
 it can be easily referenced for debugging"
@@ -32,7 +27,15 @@ it can be easily referenced for debugging"
 (defn flatten-strata [s]
   (apply merge s))
 
-(deftype Strata [strata map-fn]
+(defprotocol IStrata
+  (enable-debug [_])
+  (disable-debug [_]))
+
+(deftype Strata [strata map-fn debug]
+  IStrata
+  (enable-debug [_] (Strata. strata map-fn true))
+  (disable-debug [_] (Strata. strata map-fn false))
+
   Associative
   (containsKey [this k]
     (if (some-stratum-contains? strata k)
@@ -48,11 +51,11 @@ it can be easily referenced for debugging"
   (valAt [this k not-found]
     (if-let [m (some-stratum-contains? strata k)]
       (do
-        (if @debug
+        (if debug
           (println (str "Found key `" k "` in: " (pr-str (stratum-id m)))))
         (get m k))
       (do
-        (if @debug
+        (if debug
           (println (str "Did not find key `" k "`, using not-found value of: " not-found)))
         not-found)))
 
@@ -77,14 +80,14 @@ it can be easily referenced for debugging"
                      flatten-strata
                      count))
 
-  (empty [this] (Strata. (empty strata) map-fn))
+  (empty [this] (Strata. (empty strata) map-fn debug))
   (equiv [this o]
     (= (flatten-strata strata) o))
 
   (cons [this o]
     (let [sid (or (stratum-id o) (str (java.util.UUID/randomUUID)))
           s (stratum sid  (conj {} o))]
-      (Strata. (conj strata s) map-fn)))
+      (Strata. (conj strata s) map-fn debug)))
 
   IPersistentMap
   (assoc [this k v]
@@ -97,13 +100,13 @@ it can be easily referenced for debugging"
 
   (without [this k]
     (let [new-strata (map-fn #(dissoc % k) strata)]
-      (Strata. new-strata map-fn)))
+      (Strata. new-strata map-fn debug)))
 
   Iterable
   (iterator [this] (SeqIterator. (. this seq))))
 
 (defn strata-fifo
-  ([] (Strata. [] mapv)))
+  ([] (Strata. [] mapv false)))
 
 (defn strata-lifo
-  ([] (Strata. '() map)))
+  ([] (Strata. '() map false)))
