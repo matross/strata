@@ -1,6 +1,6 @@
 (defproject matross/strata "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Layered maps to help figure out where a value came from."
+  :url "https://github.com/matross/strata"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]]
