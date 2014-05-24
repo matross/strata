@@ -16,6 +16,8 @@ Strata is available on Clojars. To include in your project, simply add the follo
 [matross/strata "0.1.0-SNAPSHOT"]
 ```
 
+## Examples
+
 ```clojure
 (require '[matross.strata :refer [strata stratum enable-debug])
 
