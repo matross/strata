@@ -1,4 +1,4 @@
-(defproject matross/strata "0.1.0-SNAPSHOT"
+(defproject matross/strata "0.1.0"
   :description "Layered maps to help figure out where a value came from."
   :url "https://github.com/matross/strata"
   :license {:name "Eclipse Public License"

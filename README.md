@@ -13,7 +13,7 @@ takes precedence, and `strata-lifo` in which the latest occurence of a key takes
 Strata is available on Clojars. To include in your project, simply add the following to your dependencies:
 
 ```clojure
-[matross/strata "0.1.0-SNAPSHOT"]
+[matross/strata "0.1.0"]
 ```
 
 ## Examples
