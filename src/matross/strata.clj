@@ -72,8 +72,9 @@ it can be easily referenced for debugging"
 
   Seqable
   (seq [this]
-    ; vectors aren't ISeq so we must use `map`, ignoring fifo/lifo behavior
-    (map (fn [k] (. this entryAt k)) (. this keySet)))
+    (let [ks (. this keySet)]
+      (if-not (empty? ks)
+        (map (fn [k] (. this entryAt k)) (. this keySet)))))
 
   IPersistentCollection
   (count [this] (->> strata

@@ -7,6 +7,10 @@
    (apply conj (strata-fifo) ms)])
 
 (deftest strata-behaves-like-a-map
+  (testing "seq works"
+    (let [[l _] (test-strata {})]
+      (is (= (seq l) (seq {})))))
+
   (let [[lifo fifo] (test-strata {:k :not-v} {:k :v :foo :bar} {:baz :bat})]
     (testing "I can pass it to a 'keyword function'"
       (is (= (:k lifo) :v))
